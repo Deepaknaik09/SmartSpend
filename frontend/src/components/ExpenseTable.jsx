@@ -75,19 +75,22 @@ export default function ExpenseTable() {
 
   return (
     <motion.div
-      className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden"
+      className="rounded-2xl overflow-hidden"
+      style={{ background: "#fff", border: "1px solid #f1f5f9", boxShadow: "0 1px 8px rgba(0,0,0,0.04)" }}
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
     >
-      {/* Header */}
-      <div className="flex justify-between items-center px-6 py-4 border-b border-slate-50">
+      <div
+        className="flex justify-between items-center px-6 py-4"
+        style={{ borderBottom: "1px solid #f8fafc" }}
+      >
         <div>
-          <h3 className="text-base font-semibold text-slate-800">Expense History</h3>
+          <h3 className="text-sm font-semibold text-slate-800">Expense History</h3>
           <p className="text-xs text-slate-400 mt-0.5">{filtered.length} record{filtered.length !== 1 ? 's' : ''}</p>
         </div>
         <div className="flex items-center gap-2">
           {hasFilters && (
-            <button onClick={clearFilters} className="flex items-center gap-1 text-xs text-rose-500 hover:text-rose-700 transition-colors">
+            <button onClick={clearFilters} className="flex items-center gap-1 text-xs transition-colors" style={{ color: "#ef4444" }}>
               <X size={12} /> Clear filters
             </button>
           )}
@@ -150,11 +153,10 @@ export default function ExpenseTable() {
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-slate-100">
-              <th className="px-6 py-3 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">Vendor</th>
-              <th className="px-6 py-3 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">Amount</th>
-              <th className="px-6 py-3 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">Category</th>
-              <th className="px-6 py-3 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">Date</th>
+            <tr style={{ borderBottom: "1px solid #f1f5f9" }}>
+              {["Paid By", "Amount", "Category", "Date"].map(h => (
+                <th key={h} className="px-6 py-3 text-left text-[10px] font-semibold uppercase tracking-wider" style={{ color: "#94a3b8" }}>{h}</th>
+              ))}
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-50">
@@ -187,9 +189,17 @@ export default function ExpenseTable() {
                 const catColor = CATEGORY_COLORS[expense.category] || "bg-slate-100 text-slate-600";
                 const dateInfo = formatDateInfo(expense.date);
                 return (
-                  <tr key={expense.id} className="hover:bg-slate-50/70 transition-colors group">
+                  <tr
+                    key={expense.id}
+                    className="transition-colors group"
+                    style={{ borderBottom: "1px solid #f8fafc" }}
+                    onMouseEnter={e => e.currentTarget.style.background = "#f8fafc"}
+                    onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+                  >
                     <td className="px-6 py-3.5">
-                      <span className="font-medium text-slate-800">{expense.vendor}</span>
+                      <span className="font-medium text-slate-800">
+                        {expense.paidBy || "Self"}
+                      </span>
                     </td>
                     <td className="px-6 py-3.5">
                       <span className="font-semibold text-emerald-600">

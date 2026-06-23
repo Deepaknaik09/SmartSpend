@@ -1,6 +1,10 @@
 import React, { useState, useEffect } from "react";
-import { Plus, Calendar, Users, DollarSign, Trash2, MapPin, AlertTriangle, Compass } from "lucide-react";
-import { motion } from "framer-motion";
+import { Plus, Calendar, Users, Trash2, MapPin, AlertTriangle, Compass, X } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+
+const inputCls = "w-full px-3.5 py-2.5 rounded-xl text-sm text-slate-700 placeholder-slate-400 outline-none transition-all duration-200 input-glow";
+const inputStyle = { background: "#f8fafc", border: "1px solid #e2e8f0" };
+const labelCls = "block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5";
 
 export default function Trips({ user, onSelectTrip }) {
   const [trips, setTrips] = useState([]);
@@ -8,8 +12,7 @@ export default function Trips({ user, onSelectTrip }) {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [error, setError] = useState("");
-  
-  // Form fields
+
   const [destination, setDestination] = useState("");
   const [budget, setBudget] = useState("");
   const [startDate, setStartDate] = useState("");
@@ -19,334 +22,336 @@ export default function Trips({ user, onSelectTrip }) {
   const fetchData = async () => {
     try {
       setLoading(true);
-      // Fetch trips
-      const tripsResponse = await fetch(`http://localhost:5000/api/trips?username=${user.username}`);
-      const tripsData = await tripsResponse.json();
-      
-      // Fetch all expenses to calculate totals
-      const expensesResponse = await fetch("http://localhost:5000/api/expenses");
-      const expensesData = await expensesResponse.json();
-
-      if (tripsData.success) {
-        setTrips(tripsData.trips);
-      }
-      if (expensesData.success) {
-        setExpenses(expensesData.expenses);
-      }
+      const [tripsRes, expensesRes] = await Promise.all([
+        fetch(`http://localhost:5000/api/trips?username=${user.username}`),
+        fetch("http://localhost:5000/api/expenses"),
+      ]);
+      const tripsData = await tripsRes.json();
+      const expensesData = await expensesRes.json();
+      if (tripsData.success) setTrips(tripsData.trips);
+      if (expensesData.success) setExpenses(expensesData.expenses);
     } catch (err) {
-      console.error("Error fetching data:", err);
       setError("Failed to load trips data.");
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    fetchData();
-  }, [user.username]);
+  useEffect(() => { fetchData(); }, [user.username]);
 
   const handleCreateTrip = async (e) => {
     e.preventDefault();
     setError("");
-
     if (!destination.trim() || !budget || !startDate || !endDate) {
       setError("Please fill in all required fields.");
       return;
     }
-
-    const participants = participantsText
-      .split(",")
-      .map((p) => p.trim())
-      .filter((p) => p.length > 0);
-
+    const participants = participantsText.split(",").map(p => p.trim()).filter(Boolean);
     try {
-      const response = await fetch("http://localhost:5000/api/trips", {
+      const res = await fetch("http://localhost:5000/api/trips", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          destination,
-          budget: parseFloat(budget),
-          startDate,
-          endDate,
-          participants,
-          createdBy: user.username,
-        }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ destination, budget: parseFloat(budget), startDate, endDate, participants, createdBy: user.username }),
       });
-
-      const result = await response.json();
-
+      const result = await res.json();
       if (result.success) {
-        setTrips((prev) => [...prev, result.trip]);
+        setTrips(prev => [...prev, result.trip]);
         setShowModal(false);
-        // Reset form
-        setDestination("");
-        setBudget("");
-        setStartDate("");
-        setEndDate("");
-        setParticipantsText("");
+        setDestination(""); setBudget(""); setStartDate(""); setEndDate(""); setParticipantsText("");
       } else {
         setError(result.error || "Failed to create trip.");
       }
-    } catch (err) {
-      setError("Server error. Failed to create trip.");
-    }
+    } catch { setError("Server error. Failed to create trip."); }
   };
 
   const handleDeleteTrip = async (id, e) => {
-    e.stopPropagation(); // Avoid triggering card click
-    if (!window.confirm("Are you sure you want to delete this trip? All linked expenses will lose association with this trip.")) {
-      return;
-    }
-
+    e.stopPropagation();
+    if (!window.confirm("Delete this trip? Linked expenses will lose trip association.")) return;
     try {
-      const response = await fetch(`http://localhost:5000/api/trips/${id}`, {
-        method: "DELETE",
-      });
-      const result = await response.json();
-      if (result.success) {
-        setTrips((prev) => prev.filter((t) => t.id !== id));
-      }
-    } catch (err) {
-      console.error("Failed to delete trip:", err);
-    }
+      const res = await fetch(`http://localhost:5000/api/trips/${id}`, { method: "DELETE" });
+      const result = await res.json();
+      if (result.success) setTrips(prev => prev.filter(t => t.id !== id));
+    } catch {}
   };
 
-  // Helper: calculate total spent for a trip
-  const getTripSpent = (tripId) => {
-    return expenses
-      .filter((e) => e.tripId === tripId)
-      .reduce((sum, e) => sum + e.amount, 0);
+  const getTripSpent = (tripId) =>
+    expenses.filter(e => e.tripId === tripId).reduce((s, e) => s + e.amount, 0);
+
+  const statusColor = (pct) => {
+    if (pct >= 100) return { bar: "#ef4444", bg: "#fef2f2", text: "#dc2626", label: "Over budget", border: "#fecaca" };
+    if (pct >= 80) return { bar: "#f59e0b", bg: "#fffbeb", text: "#d97706", label: "Near limit", border: "#fde68a" };
+    return { bar: "#10b981", bg: "#f0fdf4", text: "#059669", label: "On track", border: "#bbf7d0" };
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-slide-up">
       {/* Header */}
-      <div className="flex justify-between items-start">
+      <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2.5">
-            <Compass size={22} className="text-indigo-500" />
+            <div
+              className="flex items-center justify-center w-9 h-9 rounded-xl"
+              style={{ background: "linear-gradient(135deg, #6366f1, #8b5cf6)", boxShadow: "0 4px 14px rgba(99,102,241,0.35)" }}
+            >
+              <Compass size={17} className="text-white" />
+            </div>
             My Trips
           </h1>
-          <p className="text-sm text-slate-500 mt-1">Manage budgets and track expenses for your travels</p>
+          <p className="text-sm text-slate-500 mt-1 ml-11">Manage budgets and track expenses per trip</p>
         </div>
         <button
           onClick={() => setShowModal(true)}
-          className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-xl font-semibold shadow-sm shadow-indigo-200 active:scale-[0.98] transition-all text-sm"
+          className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-white transition-all active:scale-95"
+          style={{ background: "linear-gradient(135deg, #6366f1, #8b5cf6)", boxShadow: "0 4px 14px rgba(99,102,241,0.3)" }}
         >
-          <Plus size={16} />
+          <Plus size={15} />
           New Trip
         </button>
       </div>
 
+      {/* Content */}
       {loading ? (
-        <div className="flex justify-center items-center py-24">
-          <div className="animate-spin w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full" />
+        <div className="flex justify-center items-center py-28">
+          <div className="w-9 h-9 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
         </div>
       ) : trips.length === 0 ? (
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-16 text-center">
-          <div className="inline-flex p-4 bg-indigo-50 text-indigo-500 rounded-2xl mb-4">
-            <Compass size={32} />
+        <div
+          className="flex flex-col items-center justify-center py-24 rounded-2xl text-center"
+          style={{ background: "#fff", border: "1px solid #f1f5f9", boxShadow: "0 1px 8px rgba(0,0,0,0.04)" }}
+        >
+          <div
+            className="flex items-center justify-center w-16 h-16 rounded-2xl mb-5"
+            style={{ background: "linear-gradient(135deg, #eef2ff, #f5f3ff)" }}
+          >
+            <Compass size={28} style={{ color: "#6366f1" }} />
           </div>
           <h2 className="text-xl font-bold text-slate-800 mb-2">No trips yet</h2>
-          <p className="text-slate-500 text-sm mb-6 max-w-sm mx-auto">Create a trip to set a budget, add trip-specific receipts, and split expenses with your travel companions.</p>
+          <p className="text-slate-500 text-sm max-w-xs mb-6">
+            Create a trip to set a budget, log receipts, and split costs with your travel companions.
+          </p>
           <button
             onClick={() => setShowModal(true)}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-xl font-semibold text-sm shadow-sm shadow-indigo-200 transition"
+            className="px-6 py-2.5 rounded-xl text-sm font-semibold text-white"
+            style={{ background: "linear-gradient(135deg, #6366f1, #8b5cf6)", boxShadow: "0 4px 14px rgba(99,102,241,0.3)" }}
           >
             Create Your First Trip
           </button>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {trips.map((trip) => {
-            const spent = getTripSpent(trip.id);
-            const budgetPercent = trip.budget > 0 ? (spent / trip.budget) * 100 : 0;
-            let alertMessage = "";
-            let barColor = "bg-emerald-500";
-            if (spent >= trip.budget) { alertMessage = "Budget Exceeded"; barColor = "bg-rose-500"; }
-            else if (budgetPercent >= 80) { alertMessage = "Near Limit"; barColor = "bg-amber-400"; }
+          <AnimatePresence>
+            {trips.map((trip) => {
+              const spent = getTripSpent(trip.id);
+              const pct = trip.budget > 0 ? (spent / trip.budget) * 100 : 0;
+              const status = statusColor(pct);
+              return (
+                <motion.div
+                  key={trip.id}
+                  onClick={() => onSelectTrip(trip.id)}
+                  className="relative rounded-2xl p-5 cursor-pointer flex flex-col gap-4 card-hover overflow-hidden group"
+                  style={{ background: "#fff", border: "1px solid #f1f5f9", boxShadow: "0 1px 8px rgba(0,0,0,0.04)" }}
+                  initial={{ opacity: 0, y: 16 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  whileHover={{ y: -3 }}
+                >
+                  {/* Top color accent */}
+                  <div
+                    className="absolute top-0 left-0 right-0 h-1 rounded-t-2xl"
+                    style={{ background: status.bar }}
+                  />
 
-            return (
-              <motion.div
-                key={trip.id}
-                onClick={() => onSelectTrip(trip.id)}
-                className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 cursor-pointer hover:shadow-md hover:border-indigo-100 transition-all flex flex-col gap-4 group relative overflow-hidden"
-                initial={{ opacity: 0, y: 15 }}
-                animate={{ opacity: 1, y: 0 }}
-                whileHover={{ y: -2 }}
-              >
-                {/* Top accent line */}
-                <div className={`absolute top-0 left-0 right-0 h-1 ${barColor} opacity-70 rounded-t-2xl`} />
-
-                {/* Header */}
-                <div className="flex justify-between items-start pt-1">
-                  <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-xl bg-indigo-50 flex items-center justify-center flex-shrink-0">
-                      <MapPin size={15} className="text-indigo-500" />
+                  {/* Header row */}
+                  <div className="flex items-start justify-between pt-1">
+                    <div className="flex items-center gap-2.5">
+                      <div
+                        className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0"
+                        style={{ background: "#eef2ff" }}
+                      >
+                        <MapPin size={14} style={{ color: "#6366f1" }} />
+                      </div>
+                      <h3 className="font-bold text-slate-800 text-sm group-hover:text-indigo-600 transition-colors leading-tight">
+                        {trip.destination}
+                      </h3>
                     </div>
-                    <h3 className="font-bold text-slate-800 group-hover:text-indigo-600 transition-colors">
-                      {trip.destination}
-                    </h3>
+                    <button
+                      onClick={(e) => handleDeleteTrip(trip.id, e)}
+                      className="p-1.5 rounded-lg transition-all opacity-0 group-hover:opacity-100"
+                      style={{ color: "#94a3b8" }}
+                      onMouseEnter={e => { e.currentTarget.style.background = "#fef2f2"; e.currentTarget.style.color = "#ef4444"; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#94a3b8"; }}
+                      title="Delete Trip"
+                    >
+                      <Trash2 size={13} />
+                    </button>
                   </div>
-                  <button
-                    onClick={(e) => handleDeleteTrip(trip.id, e)}
-                    className="text-slate-300 hover:text-rose-500 p-1 rounded-lg hover:bg-rose-50 transition-all"
-                    title="Delete Trip"
-                  >
-                    <Trash2 size={14} />
-                  </button>
-                </div>
 
-                {/* Date and participants */}
-                <div className="flex items-center gap-4 text-xs text-slate-400">
-                  <span className="flex items-center gap-1">
-                    <Calendar size={11} />
-                    {trip.startDate} → {trip.endDate}
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <Users size={11} />
-                    {trip.participants?.length || 1} traveler{(trip.participants?.length || 1) !== 1 ? 's' : ''}
-                  </span>
-                </div>
-
-                {/* Budget tracker */}
-                <div className="space-y-2">
-                  <div className="flex justify-between text-xs font-medium">
-                    <span className="text-slate-500">₹{spent.toLocaleString('en-IN', { maximumFractionDigits: 0 })} spent</span>
-                    <span className="text-slate-700">₹{trip.budget.toLocaleString('en-IN', { maximumFractionDigits: 0 })} budget</span>
+                  {/* Meta */}
+                  <div className="flex items-center gap-4 text-xs" style={{ color: "#94a3b8" }}>
+                    <span className="flex items-center gap-1">
+                      <Calendar size={11} />
+                      {trip.startDate} → {trip.endDate}
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <Users size={11} />
+                      {trip.participants?.length || 1} traveller{(trip.participants?.length || 1) !== 1 ? "s" : ""}
+                    </span>
                   </div>
-                  <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+
+                  {/* Budget bar */}
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-xs font-medium">
+                      <span className="text-slate-500">₹{spent.toLocaleString("en-IN", { maximumFractionDigits: 0 })} spent</span>
+                      <span className="text-slate-700">₹{trip.budget.toLocaleString("en-IN", { maximumFractionDigits: 0 })} budget</span>
+                    </div>
+                    <div className="w-full h-1.5 rounded-full overflow-hidden" style={{ background: "#f1f5f9" }}>
+                      <div
+                        className="h-full rounded-full transition-all duration-500"
+                        style={{ width: `${Math.min(pct, 100)}%`, background: status.bar }}
+                      />
+                    </div>
                     <div
-                      className={`${barColor} h-full rounded-full transition-all`}
-                      style={{ width: `${Math.min(budgetPercent, 100)}%` }}
-                    />
-                  </div>
-                  {alertMessage && (
-                    <div className={`flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1.5 rounded-xl ${
-                      spent >= trip.budget ? 'bg-rose-50 text-rose-600' : 'bg-amber-50 text-amber-600'
-                    }`}>
-                      <AlertTriangle size={11} />
-                      {alertMessage}
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-semibold"
+                      style={{ background: status.bg, color: status.text, border: `1px solid ${status.border}` }}
+                    >
+                      {pct >= 80 && <AlertTriangle size={10} />}
+                      {status.label} · {Math.min(Math.round(pct), 100)}%
                     </div>
-                  )}
-                </div>
-              </motion.div>
-            );
-          })}
-        </div>
-      )}
+                  </div>
+                </motion.div>
+              );
+            })}
+          </AnimatePresence>
         </div>
       )}
 
       {/* Create Trip Modal */}
-      {showModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <motion.div 
-            className="bg-white rounded-xl shadow-xl w-full max-w-lg overflow-hidden border border-gray-100 text-gray-800"
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
+      <AnimatePresence>
+        {showModal && (
+          <motion.div
+            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            style={{ background: "rgba(15,23,42,0.6)", backdropFilter: "blur(8px)" }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={e => { if (e.target === e.currentTarget) setShowModal(false); }}
           >
-            {/* Modal Header */}
-            <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-4 text-white flex justify-between items-center">
-              <h2 className="font-bold text-lg">Create New Trip</h2>
-              <button onClick={() => setShowModal(false)} className="text-white/80 hover:text-white text-xl font-bold focus:outline-none">
-                &times;
-              </button>
-            </div>
-
-            {/* Modal Body */}
-            <form onSubmit={handleCreateTrip} className="p-6 space-y-4">
-              {error && (
-                <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm flex items-center gap-2">
-                  <AlertTriangle size={16} />
-                  <span>{error}</span>
-                </div>
-              )}
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Destination *</label>
-                <input
-                  type="text"
-                  placeholder="e.g. Paris, Goa, Tokyo"
-                  value={destination}
-                  onChange={(e) => setDestination(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  required
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
+            <motion.div
+              className="w-full max-w-md rounded-2xl overflow-hidden"
+              style={{ background: "#fff", boxShadow: "0 24px 64px rgba(0,0,0,0.2)" }}
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+            >
+              {/* Modal Header */}
+              <div
+                className="px-6 py-5 flex items-center justify-between"
+                style={{ background: "linear-gradient(135deg, #1e1b4b, #312e81)", borderBottom: "1px solid rgba(255,255,255,0.08)" }}
+              >
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Start Date *</label>
-                  <input
-                    type="date"
-                    value={startDate}
-                    onChange={(e) => setStartDate(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    required
-                  />
+                  <h2 className="font-bold text-white text-base">Plan a New Trip</h2>
+                  <p className="text-indigo-300 text-xs mt-0.5">Set your budget and dates</p>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">End Date *</label>
-                  <input
-                    type="date"
-                    value={endDate}
-                    onChange={(e) => setEndDate(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    required
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Budget (₹) *</label>
-                <input
-                  type="number"
-                  placeholder="e.g. 50000"
-                  min="0"
-                  value={budget}
-                  onChange={(e) => setBudget(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Participants (Comma-separated names)
-                </label>
-                <input
-                  type="text"
-                  placeholder="e.g. Alice, Bob, Charlie (excluding you)"
-                  value={participantsText}
-                  onChange={(e) => setParticipantsText(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-                <span className="text-xs text-gray-500 block mt-1">You will be automatically added as a participant.</span>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
                 <button
-                  type="button"
                   onClick={() => setShowModal(false)}
-                  className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium"
+                  className="flex items-center justify-center w-8 h-8 rounded-xl transition-all"
+                  style={{ background: "rgba(255,255,255,0.1)", color: "#a5b4fc" }}
+                  onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.15)"}
+                  onMouseLeave={e => e.currentTarget.style.background = "rgba(255,255,255,0.1)"}
                 >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold shadow-sm transition"
-                >
-                  Create Trip
+                  <X size={15} />
                 </button>
               </div>
-            </form>
+
+              {/* Modal Body */}
+              <form onSubmit={handleCreateTrip} className="p-6 space-y-4">
+                {error && (
+                  <div
+                    className="flex items-center gap-2.5 p-3.5 rounded-xl text-sm"
+                    style={{ background: "#fef2f2", border: "1px solid #fecaca", color: "#dc2626" }}
+                  >
+                    <AlertTriangle size={14} />
+                    <span>{error}</span>
+                  </div>
+                )}
+
+                <div>
+                  <label className={labelCls}>Destination *</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Goa, Paris, Tokyo"
+                    value={destination}
+                    onChange={e => setDestination(e.target.value)}
+                    className={inputCls}
+                    style={inputStyle}
+                    required
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className={labelCls}>Start Date *</label>
+                    <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className={inputCls} style={inputStyle} required />
+                  </div>
+                  <div>
+                    <label className={labelCls}>End Date *</label>
+                    <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className={inputCls} style={inputStyle} required />
+                  </div>
+                </div>
+
+                <div>
+                  <label className={labelCls}>Budget (₹) *</label>
+                  <input
+                    type="number"
+                    placeholder="e.g. 50000"
+                    min="0"
+                    value={budget}
+                    onChange={e => setBudget(e.target.value)}
+                    className={inputCls}
+                    style={inputStyle}
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className={labelCls}>Participants (comma-separated)</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Alice, Bob (you are auto-added)"
+                    value={participantsText}
+                    onChange={e => setParticipantsText(e.target.value)}
+                    className={inputCls}
+                    style={inputStyle}
+                  />
+                </div>
+
+                <div
+                  className="flex justify-end gap-3 pt-2"
+                  style={{ borderTop: "1px solid #f1f5f9" }}
+                >
+                  <button
+                    type="button"
+                    onClick={() => setShowModal(false)}
+                    className="px-4 py-2.5 rounded-xl text-sm font-medium transition-all"
+                    style={{ background: "#f1f5f9", color: "#64748b" }}
+                    onMouseEnter={e => e.currentTarget.style.background = "#e2e8f0"}
+                    onMouseLeave={e => e.currentTarget.style.background = "#f1f5f9"}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-5 py-2.5 rounded-xl text-sm font-semibold text-white transition-all active:scale-95"
+                    style={{ background: "linear-gradient(135deg, #6366f1, #8b5cf6)", boxShadow: "0 4px 14px rgba(99,102,241,0.3)" }}
+                  >
+                    Create Trip
+                  </button>
+                </div>
+              </form>
+            </motion.div>
           </motion.div>
-        </div>
-      )}
+        )}
+      </AnimatePresence>
     </div>
   );
 }

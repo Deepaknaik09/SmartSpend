@@ -1,1 +1,19 @@
-[]
+[
+  {
+    "id": 1,
+    "destination": "Goa",
+    "budget": 10000.0,
+    "startDate": "2026-06-12",
+    "endDate": "2026-06-15",
+    "participants": [
+      "abc",
+      "Lekhan",
+      "Bharath",
+      "Prajwal",
+      "Ajay",
+      "Jeevan"
+    ],
+    "createdBy": "abc",
+    "createdAt": "2026-06-23T23:29:39.922195"
+  }
+]

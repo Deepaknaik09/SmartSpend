@@ -2,6 +2,7 @@ import React, { useRef, useState, useEffect } from "react";
 import { UploadCloud, CheckCircle, AlertCircle, Calendar, Clock, FileText, Image, Edit3, Plus, Compass } from "lucide-react";
 import { motion } from "framer-motion";
 import { getCurrentLocalDate, formatDisplayDate } from '../utils/dateUtils';
+import CustomSelect from './CustomSelect';
 
 export default function UploadCard() {
   const [extractedData, setExtractedData] = useState(null);
@@ -15,7 +16,7 @@ export default function UploadCard() {
   const [trips, setTrips] = useState([]);
   const [selectedTripId, setSelectedTripId] = useState("");
   const [selectedPaidBy, setSelectedPaidBy] = useState("");
-  const [isMedicalExpense, setIsMedicalExpense] = useState(false);
+
 
   const [manualData, setManualData] = useState({
     vendor: '',
@@ -194,7 +195,7 @@ export default function UploadCard() {
         items: dataToSave.items || [],
         tripId: selectedTripId ? parseInt(selectedTripId) : null,
         paidBy: selectedTripId ? selectedPaidBy : (storedUser.username || null),
-        isMedical: isMedicalExpense
+
       };
       
       // Send to backend
@@ -221,7 +222,7 @@ export default function UploadCard() {
           // Reset states
           setSelectedTripId("");
           setSelectedPaidBy("");
-          setIsMedicalExpense(false);
+
           
           if (manualEntry) {
             setManualData({
@@ -251,7 +252,7 @@ export default function UploadCard() {
     setError("");
     setSelectedTripId("");
     setSelectedPaidBy("");
-    setIsMedicalExpense(false);
+
     if (!manualEntry) {
       setManualData({
         vendor: '',
@@ -271,82 +272,91 @@ export default function UploadCard() {
 
   const selectedTrip = trips.find(t => t.id === parseInt(selectedTripId));
 
+  const inputCls = "w-full px-3.5 py-2.5 rounded-xl text-sm text-slate-700 placeholder-slate-400 outline-none transition-all duration-200 input-glow";
+  const inputStyle = { background: "#f8fafc", border: "1px solid #e2e8f0" };
+  const labelCls = "block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5";
+  const selectCls = inputCls + " cursor-pointer";
+
   return (
-    <motion.div className="bg-white rounded-xl shadow p-6 flex flex-col gap-4 text-gray-800" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-      {/* System Status and Date Info */}
-      <div className="mb-2 p-4 bg-blue-50 rounded-lg border border-blue-200">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Calendar size={16} className="text-blue-600" />
-            <span className="text-sm font-medium text-blue-800">Current Date</span>
-          </div>
-          <span className="text-sm text-blue-700 font-semibold">
-            {new Date().toLocaleDateString('en-US', {
-              weekday: 'short',
-              year: 'numeric',
-              month: 'short',
-              day: 'numeric'
-            })}
-          </span>
+    <motion.div
+      className="rounded-2xl flex flex-col gap-5 text-slate-800 overflow-hidden"
+      style={{ background: "#fff", border: "1px solid #f1f5f9", boxShadow: "0 1px 8px rgba(0,0,0,0.04)" }}
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+    >
+      {/* Card header */}
+      <div
+        className="px-6 py-4 flex items-center justify-between"
+        style={{ borderBottom: "1px solid #f1f5f9" }}
+      >
+        <div>
+          <h3 className="font-semibold text-slate-800 text-sm">Add Expense</h3>
+          <p className="text-xs text-slate-400 mt-0.5">
+            {new Date().toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short", year: "numeric" })}
+          </p>
         </div>
-        <p className="text-xs text-blue-600 mt-1">
-          📅 Today: {getCurrentLocalDate()} | 
-          Receipts without a detected date will default to today.
-        </p>
-      </div>
-      
-      {/* Manual Entry Toggle */}
-      <div className="flex justify-center mb-4">
-        <button
-          onClick={handleManualEntryToggle}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg transition ${
-            manualEntry 
-              ? 'bg-orange-100 text-orange-700 border border-orange-200' 
-              : 'bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200'
-          }`}
+        {/* Mode toggle */}
+        <div
+          className="flex p-0.5 rounded-xl"
+          style={{ background: "#f1f5f9" }}
         >
-          {manualEntry ? (
-            <>
-              <UploadCloud size={16} />
-              Switch to File Upload
-            </>
-          ) : (
-            <>
-              <Edit3 size={16} />
-              Manual Entry
-            </>
-          )}
-        </button>
+          <button
+            onClick={() => { if (manualEntry) handleManualEntryToggle(); }}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200"
+            style={{
+              background: !manualEntry ? "#fff" : "transparent",
+              color: !manualEntry ? "#6366f1" : "#94a3b8",
+              boxShadow: !manualEntry ? "0 1px 3px rgba(0,0,0,0.08)" : "none",
+            }}
+          >
+            <UploadCloud size={13} />
+            Upload
+          </button>
+          <button
+            onClick={() => { if (!manualEntry) handleManualEntryToggle(); }}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200"
+            style={{
+              background: manualEntry ? "#fff" : "transparent",
+              color: manualEntry ? "#6366f1" : "#94a3b8",
+              boxShadow: manualEntry ? "0 1px 3px rgba(0,0,0,0.08)" : "none",
+            }}
+          >
+            <Edit3 size={13} />
+            Manual
+          </button>
+        </div>
       </div>
+
+      <div className="px-6 pb-6 flex flex-col gap-5">
+
+      {/* Mode toggle is in the card header above */}
+
 
       {/* Manual Entry Form */}
       {manualEntry && (
-        <div className="space-y-4 p-4 bg-orange-50 rounded-lg border border-orange-200">
-          <div className="flex items-center gap-2 text-orange-700 mb-4">
-            <Plus size={16} />
-            <span className="font-semibold">Add Expense Manually</span>
+        <div className="space-y-4">
+          <div className="flex items-center gap-2 mb-1" style={{ color: "#6366f1" }}>
+            <Plus size={14} />
+            <span className="text-sm font-semibold">Expense Details</span>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Vendor Input */}
+            {/* Person / Paid By Input */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Vendor Name *
-              </label>
+              <label className={labelCls}>Paid By *</label>
               <input
                 type="text"
                 value={manualData.vendor}
                 onChange={(e) => setManualData(prev => ({...prev, vendor: e.target.value}))}
-                placeholder="Enter vendor/store name"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="e.g. Alice, Bob, self"
+                className={inputCls}
+                style={inputStyle}
               />
             </div>
             
             {/* Amount Input */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Amount (₹) *
-              </label>
+              <label className={labelCls}>Amount (₹) *</label>
               <input
                 type="number"
                 value={manualData.amount}
@@ -354,169 +364,165 @@ export default function UploadCard() {
                 placeholder="0.00"
                 min="0"
                 step="0.01"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className={inputCls}
+                style={inputStyle}
               />
             </div>
             
             {/* Category Dropdown */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Category *
-              </label>
-              <select
+              <label className={labelCls}>Category *</label>
+              <CustomSelect
                 value={manualData.category}
-                onChange={(e) => setManualData(prev => ({...prev, category: e.target.value}))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">Select category</option>
-                {categories.map(cat => (
-                  <option key={cat} value={cat}>{cat}</option>
-                ))}
-              </select>
+                onChange={(val) => setManualData(prev => ({...prev, category: val}))}
+                options={categories}
+                placeholder="Select category…"
+                className={selectCls}
+                style={inputStyle}
+              />
             </div>
             
             {/* Date Input */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Date
-              </label>
+              <label className={labelCls}>Date</label>
               <input
                 type="date"
                 value={manualData.date}
                 onChange={(e) => setManualData(prev => ({...prev, date: e.target.value}))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className={inputCls}
+                style={inputStyle}
               />
             </div>
 
             {/* Associate with Trip */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Associate with Trip (Optional)
-              </label>
-              <select
+              <label className={labelCls}>Link to Trip (Optional)</label>
+              <CustomSelect
                 value={selectedTripId}
-                onChange={(e) => handleTripChange(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">None (Personal)</option>
-                {trips.map(t => (
-                  <option key={t.id} value={t.id}>{t.destination} ({t.startDate})</option>
-                ))}
-              </select>
+                onChange={(val) => handleTripChange(val)}
+                options={[
+                  { value: "", label: "None (Personal)" },
+                  ...trips.map(t => ({ value: t.id, label: `${t.destination} (${t.startDate})` }))
+                ]}
+                placeholder="None (Personal)"
+                className={selectCls}
+                style={inputStyle}
+              />
             </div>
 
             {/* Paid By (Only show if trip selected) */}
             {selectedTripId && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Paid By
-                </label>
-                <select
+                <label className={labelCls}>Paid By</label>
+                <CustomSelect
                   value={selectedPaidBy}
-                  onChange={(e) => setSelectedPaidBy(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  {selectedTrip?.participants.map(p => (
-                    <option key={p} value={p}>{p}</option>
-                  ))}
-                </select>
+                  onChange={(val) => setSelectedPaidBy(val)}
+                  options={selectedTrip?.participants || []}
+                  placeholder="Select person..."
+                  className={selectCls}
+                  style={inputStyle}
+                />
               </div>
             )}
           </div>
 
-          {/* Is Medical checkbox */}
-          <div className="flex items-center gap-2 py-2">
-            <input
-              type="checkbox"
-              id="isMedicalManual"
-              checked={isMedicalExpense}
-              onChange={(e) => setIsMedicalExpense(e.target.checked)}
-              className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-            />
-            <label htmlFor="isMedicalManual" className="text-sm font-medium text-gray-700 select-none">
-              🚑 Mark as Medical Expense
-            </label>
-          </div>
+
           
           {/* Add Button for Manual Entry */}
-          <button 
+          <button
             onClick={handleAddToExpenses}
             disabled={loading || saved || !manualData.vendor.trim() || !manualData.amount || !manualData.category}
-            className={`w-full py-2 px-4 rounded transition ${
-              saved 
-                ? 'bg-green-600 text-white' 
-                : 'bg-orange-600 text-white hover:bg-orange-700 disabled:bg-gray-300 disabled:cursor-not-allowed'
-            }`}
+            className="w-full py-3 rounded-xl font-semibold text-sm text-white flex items-center justify-center gap-2 transition-all duration-200"
+            style={{
+              background: saved
+                ? "linear-gradient(135deg, #10b981, #059669)"
+                : loading || !manualData.vendor.trim() || !manualData.amount || !manualData.category
+                ? "#e2e8f0"
+                : "linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)",
+              color: (!manualData.vendor.trim() || !manualData.amount || !manualData.category) && !saved ? "#94a3b8" : "#fff",
+              boxShadow: saved || loading || !manualData.vendor.trim() ? "none" : "0 4px 16px rgba(99,102,241,0.35)",
+              cursor: loading || saved ? "not-allowed" : "pointer",
+            }}
           >
             {loading ? (
-              <div className="flex items-center justify-center gap-2">
-                <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full"></div>
-                Saving...
-              </div>
+              <><div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full" />Saving…</>
             ) : saved ? (
-              <div className="flex items-center justify-center gap-2">
-                <CheckCircle size={16} />
-                Added Successfully!
-              </div>
+              <><CheckCircle size={16} />Added Successfully!</>
             ) : (
-              'Add Manual Expense'
+              <><Plus size={15} />Add Expense</>
             )}
           </button>
         </div>
       )}
-      
+
       {/* File Upload Area */}
       {!manualEntry && (
         <div
-          className="border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center h-40 cursor-pointer hover:border-blue-400 transition"
+          className="flex flex-col items-center justify-center gap-3 cursor-pointer transition-all duration-200 rounded-2xl mx-0"
+          style={{
+            border: "2px dashed #e2e8f0",
+            minHeight: "160px",
+            background: "#fafafa",
+          }}
           onDrop={onDrop}
-          onDragOver={(e) => e.preventDefault()}
+          onDragOver={(e) => { e.preventDefault(); e.currentTarget.style.borderColor = "#6366f1"; e.currentTarget.style.background = "#eef2ff"; }}
+          onDragLeave={(e) => { e.currentTarget.style.borderColor = "#e2e8f0"; e.currentTarget.style.background = "#fafafa"; }}
           onClick={() => fileInput.current.click()}
         >
-          <div className="flex items-center gap-3 mb-3">
-            <Image size={28} className="text-blue-400" />
-            <FileText size={28} className="text-red-400" />
+          <div
+            className="flex items-center justify-center w-14 h-14 rounded-2xl"
+            style={{ background: "linear-gradient(135deg, #eef2ff, #f5f3ff)" }}
+          >
+            <UploadCloud size={26} style={{ color: "#6366f1" }} />
           </div>
-          <UploadCloud size={32} className="text-gray-400 mb-2" />
-          <span className="text-gray-600 font-medium">Upload Invoice or Receipt</span>
-          <span className="text-gray-500 text-sm">Support: Images (JPG, PNG) & PDF documents</span>
-          <input 
-            type="file" 
-            ref={fileInput} 
-            className="hidden" 
+          <div className="text-center">
+            <p className="text-sm font-semibold text-slate-700">Drop file or <span style={{ color: "#6366f1" }}>browse</span></p>
+            <p className="text-xs text-slate-400 mt-0.5">JPG, PNG, PDF — up to 10MB</p>
+          </div>
+          <input
+            type="file"
+            ref={fileInput}
+            className="hidden"
             accept="image/*,application/pdf"
-            onChange={e => handleFile(e.target.files[0])} 
+            onChange={e => handleFile(e.target.files[0])}
           />
         </div>
       )}
       
       {/* Status Messages */}
       {loading && (
-        <div className="flex items-center gap-2 text-blue-600 bg-blue-50 p-3 rounded">
-          <div className="animate-spin w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full"></div>
-          <span>
-            Processing {fileType === 'application/pdf' ? 'PDF invoice' : 'image'} with ML...
-            {fileType === 'application/pdf' && ' 📄'}
-            {fileType?.startsWith('image/') && ' 🖼️'}
+        <div
+          className="flex items-center gap-3 p-3.5 rounded-xl text-sm"
+          style={{ background: "#eef2ff", border: "1px solid #c7d2fe", color: "#4f46e5" }}
+        >
+          <div className="animate-spin w-4 h-4 border-2 border-indigo-500 border-t-transparent rounded-full flex-shrink-0" />
+          <span className="font-medium">
+            Processing {fileType === 'application/pdf' ? 'PDF invoice' : 'image'} with AI…
           </span>
         </div>
       )}
-      
+
       {error && (
-        <div className="flex items-center gap-2 text-red-600 bg-red-50 p-3 rounded">
-          <AlertCircle size={16} />
+        <div
+          className="flex items-start gap-3 p-3.5 rounded-xl text-sm"
+          style={{ background: "#fef2f2", border: "1px solid #fecaca", color: "#dc2626" }}
+        >
+          <AlertCircle size={15} className="flex-shrink-0 mt-0.5" />
           <span>{error}</span>
         </div>
       )}
-      
+
       {/* Success notification */}
       {saved && (
-        <div className="flex items-center gap-2 text-green-600 bg-green-50 p-3 rounded border border-green-200">
-          <CheckCircle size={16} />
+        <div
+          className="flex items-start gap-3 p-3.5 rounded-xl text-sm"
+          style={{ background: "#f0fdf4", border: "1px solid #bbf7d0", color: "#15803d" }}
+        >
+          <CheckCircle size={15} className="flex-shrink-0 mt-0.5" />
           <div>
-            <span className="font-semibold">Expense saved successfully!</span>
-            <p className="text-sm text-green-700">
-              ₹{(manualEntry ? parseFloat(manualData.amount) : (extractedData?.total_amount || extractedData?.amount))?.toFixed(2)} expense from {manualEntry ? manualData.vendor : extractedData?.vendor} has been added to your records.
+            <p className="font-semibold">Expense saved!</p>
+            <p className="text-xs mt-0.5 text-emerald-600">
+              ₹{(manualEntry ? parseFloat(manualData.amount) : (extractedData?.total_amount || extractedData?.amount))?.toFixed(2)} from {manualEntry ? manualData.vendor : extractedData?.vendor} added.
             </p>
           </div>
         </div>
@@ -524,168 +530,94 @@ export default function UploadCard() {
       
       {/* Extracted Data Display */}
       {extractedData && !manualEntry && (
-        <div className="space-y-4 p-4 border border-green-200 rounded-lg bg-green-50/20">
-          <div className="flex items-center gap-2 text-green-600">
-            <CheckCircle size={16} />
-            <span className="font-semibold">Bill processed successfully!</span>
+        <div
+          className="rounded-xl p-4 space-y-4"
+          style={{ background: "#f0fdf4", border: "1px solid #bbf7d0" }}
+        >
+          <div className="flex items-center gap-2" style={{ color: "#15803d" }}>
+            <CheckCircle size={15} />
+            <span className="text-sm font-semibold">Bill scanned successfully</span>
           </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="bg-gray-50 rounded p-3">
-              <h3 className="font-semibold text-sm text-gray-700 mb-2">Vendor</h3>
-              <p className="text-sm">{extractedData.vendor}</p>
-            </div>
-            
-            <div className="bg-gray-50 rounded p-3">
-              <h3 className="font-semibold text-sm text-gray-700 mb-2">Total Amount</h3>
-              <p className="text-lg font-bold text-green-600">
-                ₹{(extractedData.amount || extractedData.total_amount || 0).toFixed(2)}
-              </p>
-              {extractedData.currency && (
-                <p className="text-xs text-gray-500">{extractedData.currency}</p>
-              )}
-            </div>
-            
-            <div className="bg-gray-50 rounded p-3">
-              <h3 className="font-semibold text-sm text-gray-700 mb-2">Category</h3>
-              <p className="text-sm bg-blue-100 text-blue-800 px-2 py-1 rounded inline-block">
-                {extractedData.category}
-              </p>
-            </div>
-            
-            <div className="bg-gray-50 rounded p-3">
-              <div className="flex items-center gap-2 mb-2">
-                <Calendar size={16} className="text-gray-600" />
-                <h3 className="font-semibold text-sm text-gray-700">Date</h3>
+
+          {/* Summary grid */}
+          <div className="grid grid-cols-2 gap-3">
+            {[
+              { label: "Paid By", value: extractedData.vendor },
+              { label: "Amount", value: `₹${(extractedData.amount || extractedData.total_amount || 0).toFixed(2)}`, highlight: true },
+              { label: "Category", value: extractedData.category },
+              { label: "Date", value: formatDisplayDate(extractedData.date || extractedData.dates?.[0]).formatted },
+            ].map(({ label, value, highlight }) => (
+              <div key={label} className="bg-white rounded-xl p-3" style={{ border: "1px solid #dcfce7" }}>
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400 mb-0.5">{label}</p>
+                <p className={`text-sm font-semibold ${highlight ? 'text-emerald-600' : 'text-slate-700'}`}>{value}</p>
               </div>
-              {(() => {
-                const dateInfo = formatDisplayDate(extractedData.date || extractedData.dates?.[0]);
-                return (
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium">{dateInfo.formatted}</p>
-                    <div className="flex items-center gap-2">
-                      {dateInfo.isToday ? (
-                        <>
-                          <Clock size={12} className="text-green-600" />
-                          <span className="text-xs text-green-600 bg-green-50 px-2 py-1 rounded">
-                            {dateInfo.note}
-                          </span>
-                        </>
-                      ) : (
-                        <>
-                          <Calendar size={12} className="text-blue-600" />
-                          <span className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded">
-                            {dateInfo.note}
-                          </span>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                );
-              })()}
-            </div>
+            ))}
+          </div>
 
-            {/* Associate with Trip dropdown */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Associate with Trip
-              </label>
-              <select
-                value={selectedTripId}
-                onChange={(e) => handleTripChange(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-              >
-                <option value="">None (Personal)</option>
-                {trips.map(t => (
-                  <option key={t.id} value={t.id}>{t.destination} ({t.startDate})</option>
-                ))}
-              </select>
-            </div>
-
-            {/* Paid By dropdown */}
+          {/* Trip association */}
+          <div className="space-y-2">
+            <label className={labelCls}>Link to Trip (Optional)</label>
+            <CustomSelect
+              value={selectedTripId}
+              onChange={(val) => handleTripChange(val)}
+              options={[
+                { value: "", label: "None (Personal)" },
+                ...trips.map(t => ({ value: t.id, label: `${t.destination} (${t.startDate})` }))
+              ]}
+              placeholder="None (Personal)"
+              className={selectCls}
+              style={{ ...inputStyle, background: "#fff" }}
+            />
             {selectedTripId && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Paid By
-                </label>
-                <select
-                  value={selectedPaidBy}
-                  onChange={(e) => setSelectedPaidBy(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-                >
-                  {selectedTrip?.participants.map(p => (
-                    <option key={p} value={p}>{p}</option>
-                  ))}
-                </select>
-              </div>
+              <CustomSelect
+                value={selectedPaidBy}
+                onChange={(val) => setSelectedPaidBy(val)}
+                options={selectedTrip?.participants || []}
+                placeholder="Select person..."
+                className={selectCls}
+                style={{ ...inputStyle, background: "#fff", marginTop: "8px" }}
+              />
             )}
           </div>
 
-          {/* Is Medical checkbox */}
-          <div className="flex items-center gap-2 py-1">
-            <input
-              type="checkbox"
-              id="isMedicalOcr"
-              checked={isMedicalExpense}
-              onChange={(e) => setIsMedicalExpense(e.target.checked)}
-              className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-            />
-            <label htmlFor="isMedicalOcr" className="text-sm font-medium text-gray-700 select-none">
-              🚑 Mark as Medical Expense
-            </label>
-          </div>
-          
-          {extractedData.items && extractedData.items.length > 0 && (
-            <div className="bg-gray-50 rounded p-3">
-              <h3 className="font-semibold text-sm text-gray-700 mb-2">Line Items</h3>
-              <div className="space-y-1 max-h-32 overflow-y-auto">
-                {extractedData.items.slice(0, 5).map((item, index) => (
-                  <p key={index} className="text-xs text-gray-600">{item}</p>
+
+
+          {/* Line items */}
+          {extractedData.items?.length > 0 && (
+            <details>
+              <summary className="cursor-pointer text-xs font-medium text-slate-500 hover:text-slate-700">
+                View {extractedData.items.length} line item{extractedData.items.length !== 1 ? 's' : ''}
+              </summary>
+              <div className="mt-2 space-y-1 max-h-28 overflow-y-auto">
+                {extractedData.items.slice(0, 8).map((item, i) => (
+                  <p key={i} className="text-xs text-slate-500 pl-2 border-l-2 border-emerald-200">{item}</p>
                 ))}
-                {extractedData.items.length > 5 && (
-                  <p className="text-xs text-gray-500">... and {extractedData.items.length - 5} more items</p>
-                )}
               </div>
-            </div>
+            </details>
           )}
-          
-          <button 
+
+          <button
             onClick={handleAddToExpenses}
             disabled={loading || saved}
-            className={`w-full py-2 px-4 rounded transition ${
-              saved 
-                ? 'bg-green-600 text-white' 
-                : 'bg-blue-600 text-white hover:bg-blue-700'
-            } ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+            className="w-full py-3 rounded-xl font-semibold text-sm text-white flex items-center justify-center gap-2 transition-all duration-200"
+            style={{
+              background: saved ? "linear-gradient(135deg, #10b981, #059669)" : "linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)",
+              boxShadow: saved ? "none" : "0 4px 16px rgba(99,102,241,0.35)",
+              opacity: loading ? 0.8 : 1,
+              cursor: loading || saved ? "not-allowed" : "pointer",
+            }}
           >
             {loading ? (
-              <div className="flex items-center justify-center gap-2">
-                <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full"></div>
-                Saving...
-              </div>
+              <><div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full" />Saving…</>
             ) : saved ? (
-              <div className="flex items-center justify-center gap-2">
-                <CheckCircle size={16} />
-                Added Successfully!
-              </div>
+              <><CheckCircle size={15} />Added to Expenses!</>
             ) : (
-              'Add to Expenses'
+              <>Add to Expenses</>
             )}
           </button>
         </div>
       )}
-      
-      {/* OCR Preview for debugging */}
-      {extractedData && !manualEntry && (
-        <details className="mt-4">
-          <summary className="cursor-pointer text-sm text-gray-600 hover:text-gray-800">
-            View Raw OCR Text
-          </summary>
-          <div className="bg-gray-50 rounded p-3 mt-2 text-xs text-gray-700 max-h-32 overflow-auto">
-            {extractedData.extracted_text || "No text extracted"}
-          </div>
-        </details>
-      )}
+      </div>
     </motion.div>
   );
 }

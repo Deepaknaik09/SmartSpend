@@ -16,7 +16,7 @@ export default function TripDetails({ user, tripId, onBack }) {
   const [category, setCategory] = useState("");
   const [date, setDate] = useState(getCurrentLocalDate());
   const [paidBy, setPaidBy] = useState("");
-  const [isMedical, setIsMedical] = useState(false);
+
   const [formLoading, setFormLoading] = useState(false);
 
   const categories = [
@@ -97,7 +97,7 @@ export default function TripDetails({ user, tripId, onBack }) {
           date,
           tripId: trip.id,
           paidBy,
-          isMedical,
+
         }),
       });
 
@@ -110,7 +110,7 @@ export default function TripDetails({ user, tripId, onBack }) {
         setVendor("");
         setAmount("");
         setCategory("");
-        setIsMedical(false);
+
         
         // Trigger generic expense update for charts/tables elsewhere
         window.dispatchEvent(new CustomEvent('expenseAdded', { detail: result.expense }));
@@ -167,10 +167,7 @@ export default function TripDetails({ user, tripId, onBack }) {
   const totalSpent = expenses.reduce((sum, e) => sum + e.amount, 0);
   const budgetPercent = trip.budget > 0 ? (totalSpent / trip.budget) * 100 : 0;
   
-  // Medical Expenses calculations
-  const medicalExpenses = expenses.filter(e => e.isMedical || e.category === 'Healthcare');
-  const medicalTotal = medicalExpenses.reduce((sum, e) => sum + e.amount, 0);
-  const medicalPercentOfTotal = totalSpent > 0 ? (medicalTotal / totalSpent) * 100 : 0;
+
 
   // Active Trip status & reminder checks
   const isTripActive = () => {
@@ -410,56 +407,6 @@ export default function TripDetails({ user, tripId, onBack }) {
             </div>
           </div>
 
-          {/* Medical Expense Reporting */}
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 space-y-4">
-            <div className="flex justify-between items-center">
-              <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                <HeartPulse size={20} className="text-red-500" />
-                Medical Expense Report
-              </h2>
-              <span className="text-sm font-semibold bg-red-50 text-red-700 px-3 py-1 rounded-full">
-                Total Medical: ₹{medicalTotal.toLocaleString()}
-              </span>
-            </div>
-
-            {medicalExpenses.length === 0 ? (
-              <div className="p-4 bg-gray-50 text-center rounded-lg text-sm text-gray-500">
-                No medical expenses recorded for this trip.
-              </div>
-            ) : (
-              <div className="space-y-3">
-                <div className="text-sm text-gray-600">
-                  Medical expenses account for <span className="font-bold text-red-600">{medicalPercentOfTotal.toFixed(1)}%</span> of the overall trip expenditure.
-                </div>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm text-left text-gray-600">
-                    <thead className="bg-gray-50 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                      <tr>
-                        <th className="px-4 py-2">Item/Vendor</th>
-                        <th className="px-4 py-2">Paid By</th>
-                        <th className="px-4 py-2 text-right">Amount</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-100">
-                      {medicalExpenses.map(e => (
-                        <tr key={e.id} className="hover:bg-gray-50">
-                          <td className="px-4 py-3">
-                            <div>
-                              <p className="font-medium text-gray-900">{e.vendor}</p>
-                              <p className="text-xs text-gray-400">{e.date}</p>
-                            </div>
-                          </td>
-                          <td className="px-4 py-3 text-sm">{e.paidBy || trip.createdBy}</td>
-                          <td className="px-4 py-3 text-right font-bold text-red-600">₹{e.amount.toLocaleString()}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )}
-          </div>
-
           {/* Linked Expenses List */}
           <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 space-y-4">
             <h2 className="text-lg font-bold text-gray-900">Trip Expenses List ({expenses.length})</h2>
@@ -485,7 +432,7 @@ export default function TripDetails({ user, tripId, onBack }) {
                       <tr key={e.id} className="hover:bg-gray-50 transition">
                         <td className="px-4 py-3">
                           <p className="font-bold text-gray-900">{e.vendor}</p>
-                          <p className="text-xs text-gray-400">{e.date} {e.isMedical && "• 🚑 Medical"}</p>
+                          <p className="text-xs text-gray-400">{e.date}</p>
                         </td>
                         <td className="px-4 py-3">
                           <span className="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded-full font-medium">
@@ -598,19 +545,6 @@ export default function TripDetails({ user, tripId, onBack }) {
                     <option key={p} value={p}>{p}</option>
                   ))}
                 </select>
-              </div>
-
-              <div className="flex items-center gap-2 py-2">
-                <input
-                  type="checkbox"
-                  id="isMedical"
-                  checked={isMedical}
-                  onChange={(e) => setIsMedical(e.target.checked)}
-                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                />
-                <label htmlFor="isMedical" className="font-medium text-gray-700 select-none">
-                  🚑 Mark as Medical Expense
-                </label>
               </div>
 
               <button
