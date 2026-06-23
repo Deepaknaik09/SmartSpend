@@ -74,7 +74,7 @@ export default function App() {
   } else if (page === "Reports") {
     content = <Reports />;
   } else if (page === "Settings") {
-    content = <Settings />;
+    content = <Settings user={user} onLogout={handleLogout} />;
   }
 
   return (

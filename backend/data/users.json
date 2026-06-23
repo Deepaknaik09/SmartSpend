@@ -3,5 +3,10 @@
     "username": "abc",
     "password_hash": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
     "createdAt": "2026-06-04T19:47:47.756064"
+  },
+  "abc_test": {
+    "username": "abc_test",
+    "password_hash": "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
+    "createdAt": "2026-06-23T22:22:42.776545"
   }
 }

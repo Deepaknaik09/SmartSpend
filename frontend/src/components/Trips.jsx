@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Plus, Calendar, Users, DollarSign, Trash2, MapPin, AlertTriangle } from "lucide-react";
+import { Plus, Calendar, Users, DollarSign, Trash2, MapPin, AlertTriangle, Compass } from "lucide-react";
 import { motion } from "framer-motion";
 
 export default function Trips({ user, onSelectTrip }) {

@@ -45,8 +45,8 @@ export default function LineChartCard() {
 
   const max = data.length > 0 ? Math.max(...data.map(d => d.amount)) : 0;
   const points = data.length > 0 ? data.map((d, i) => {
-    const x = 20 + (i * 80) / (data.length - 1);
-    const y = 100 - (d.amount / max) * 80;
+    const x = data.length > 1 ? 20 + (i * 80) / (data.length - 1) : 60;
+    const y = max > 0 ? 100 - (d.amount / max) * 80 : 60;
     return `${x},${y}`;
   }).join(" ") : "";
 
@@ -81,8 +81,8 @@ export default function LineChartCard() {
               <>
                 <polyline points={points} fill="none" stroke="#6366f1" strokeWidth={3} />
                 {data.map((d, i) => {
-                  const x = 20 + (i * 80) / (data.length - 1);
-                  const y = 100 - (d.amount / max) * 80;
+                  const x = data.length > 1 ? 20 + (i * 80) / (data.length - 1) : 60;
+                  const y = max > 0 ? 100 - (d.amount / max) * 80 : 60;
                   return <circle key={i} cx={x} cy={y} r={4} fill="#6366f1" />;
                 })}
               </>

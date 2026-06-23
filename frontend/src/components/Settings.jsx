@@ -1,13 +1,16 @@
 import React, { useState } from "react";
 
-export default function Settings() {
-  const [username, setUsername] = useState("John Doe");
-  const [email, setEmail] = useState("john@example.com");
+export default function Settings({ user, onLogout }) {
+  const [username, setUsername] = useState(user?.username || "User");
+  const [email, setEmail] = useState(`${user?.username || "user"}@example.com`);
   const [profilePhoto, setProfilePhoto] = useState(null);
 
   const handleLogout = () => {
-    // TODO: Add logout logic
-    alert("Logged out!");
+    if (onLogout) {
+      onLogout();
+    } else {
+      alert("Logged out!");
+    }
   };
 
   const handlePhotoChange = (e) => {
