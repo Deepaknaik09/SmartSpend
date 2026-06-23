@@ -53,6 +53,7 @@ export default function ExpenseTable() {
     try {
       const response = await fetch(`http://localhost:5000/api/expenses/${id}`, { method: 'DELETE' });
       if (response.ok) {
+        setExpenses(prev => prev.filter(e => e.id !== id));
         window.dispatchEvent(new CustomEvent('expenseDeleted', { detail: { id } }));
       } else {
         alert("Failed to delete expense.");

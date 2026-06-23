@@ -139,7 +139,7 @@ export default function TripDetails({ user, tripId, onBack }) {
       if (result.success) {
         setExpenses((prev) => prev.filter((e) => e.id !== id));
         // Trigger event
-        window.dispatchEvent(new CustomEvent('expenseAdded'));
+        window.dispatchEvent(new CustomEvent('expenseDeleted', { detail: { id } }));
       }
     } catch (err) {
       console.error("Failed to delete expense:", err);

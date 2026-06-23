@@ -13,7 +13,11 @@ export default function BudgetProgressCard() {
     fetchExpenses();
     const handle = () => fetchExpenses();
     window.addEventListener('expenseAdded', handle);
-    return () => window.removeEventListener('expenseAdded', handle);
+    window.addEventListener('expenseDeleted', handle);
+    return () => {
+      window.removeEventListener('expenseAdded', handle);
+      window.removeEventListener('expenseDeleted', handle);
+    };
   }, []);
 
   useEffect(() => {
